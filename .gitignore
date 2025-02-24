@@ -1,0 +1,8 @@
+# Python (Flask)
+venv/
+__pycache__/
+.env
+
+# Node.js (React Native)
+node_modules/
+*.log
