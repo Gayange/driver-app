@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Button, Text, ActivityIndicator, TextInput, Modal, TouchableOpacity, FlatList, Linking } from 'react-native';
+import { View, StyleSheet, Button, Text, ActivityIndicator, TextInput, Modal, TouchableOpacity, FlatList, Linking, Image } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import axios from 'axios';
@@ -15,9 +15,10 @@ const MapScreen = ({ navigation }) => {
   const [isBlurred, setIsBlurred] = useState(true);
   const [suggestedDestinations, setSuggestedDestinations] = useState([]);
   const [destinationCoords, setDestinationCoords] = useState(null);
+  const [reports, setReports] = useState([]); // State to store reports data
 
   const googleMapsApiKey = 'AIzaSyAtXPDlFXzZTuarUgQPX-SOMD8wbQve5CM';  
-  const placesApiKey = 'AIzaSyAtXPDlFXzZTuarUgQPX-SOMD8wbQve5CM';  // Replace with your actual Google Places API Key
+  const placesApiKey = 'AIzaSyAtXPDlFXzZTuarUgQPX-SOMD8wbQve5CM';  
 
   useEffect(() => {
     (async () => {
@@ -28,8 +29,35 @@ const MapScreen = ({ navigation }) => {
       }
       let currentLocation = await Location.getCurrentPositionAsync({});
       setLocation(currentLocation);
+
+      // Fetch reports data
+      fetchReports();
     })();
   }, []);
+
+  // Fetch reports data from the provided URL
+  const fetchReports = async () => {
+    try {
+      const response = await axios.get('http://192.168.1.68:5000/reports');
+      setReports(response.data);
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+    }
+  };
+
+  // Function to get the appropriate icon based on the issue
+  const getIconForIssue = (issue) => {
+    switch (issue) {
+      case 'Special Traffic Plan':
+        return require('../assets/traffic.png'); // Icon for Special Traffic Plan
+      case 'Accident':
+        return require('../assets/accident.png'); // Icon for Accident
+      case 'Roadblock':
+        return require('../assets/roadwork.png'); // Icon for Roadblock
+      default:
+        return require('../assets/default.png'); // Default icon
+    }
+  };
 
   const getTrafficUpdates = async (destinationLat, destinationLng) => {
     if (!location) return;
@@ -167,6 +195,21 @@ const MapScreen = ({ navigation }) => {
           />
         )}
         {route && <Polyline coordinates={route} strokeWidth={6} strokeColor="blue" />}
+
+        {/* Render markers for reports with different icons */}
+        {reports.map((report, index) => (
+          <Marker
+            key={index}
+            coordinate={{ latitude: report.latitude, longitude: report.longitude }}
+            title={report.subject}
+            description={report.issue}
+          >
+            <Image
+              source={getIconForIssue(report.issue)} // Get the appropriate icon based on the issue
+              style={{ width: 30, height: 30 }}
+            />
+          </Marker>
+        ))}
       </MapView>
 
       {/* Modal for user input */}
